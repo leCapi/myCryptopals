@@ -3,11 +3,34 @@ import codecs
 import sys
 import operator
 
+def hexStrToByteArray(s):
+  ba = bytearray()
+  nbBytes = len(s)//2 - 2 + 1
+  bInt = int(s, 16)
+  ba.extend(bInt.to_bytes(nbBytes, byteorder='big'))
+  return ba
+
+
 def hexStrToB64Str(hexStr):
   decodedStr = codecs.decode(hexStr, 'hex')
   b64 = codecs.encode(decodedStr,'base64')
-  
+
   return codecs.decode(b64).rstrip()
+
+
+def isPlainText(ba, rate = 0.90):
+  nbAlphaNumSpace = 0
+  lenBa = len(ba)
+
+  for i in ba :
+    if i == 0x20 or (ord('a') <= i <= ord('z')) or (ord('A') <= i <= ord('Z')):
+      nbAlphaNumSpace +=1
+
+  rateAlphaNumSpace = nbAlphaNumSpace/lenBa
+
+  if (rateAlphaNumSpace >= rate):
+    return True
+  return False
 
 
 def xorBuffer(b1, b2):
@@ -21,6 +44,7 @@ def xorBuffer(b1, b2):
   
   return b3
 
+
 def xorKey(cipheredText, key):
   key_len = len(key)
   plainText = bytearray(len(cipheredText))
@@ -31,10 +55,12 @@ def xorKey(cipheredText, key):
 
 def countByteOccurence(ba):
   """
-  Return sorted list of tuple
+  Return sorted list of tuple.
 
-  :param ba: Ciphered text
-  :return: a sorted list of 256 tuples (char, %presence)
+  Args:
+    ba bytearray: Ciphered text
+  Returns:
+    list: a sorted list of 256 tuples (char, %presence)
   """
   tab = [0] * 256
   strlen = len(ba) - 1
@@ -55,28 +81,9 @@ def displayCharOccurences(sortedOcc) :
 
 
 if __name__ == "__main__" :
-  cipheredText = bytearray()
-  b1str = "0x1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
-  nbBytes = len(b1str)//2 - 2 + 1
-  b1int = int(b1str, 16) 
-  print(hex(b1int))
-  cipheredText.extend(b1int.to_bytes(nbBytes, byteorder='big'))
-  print(cipheredText.hex())
-  res = countByteOccurence(cipheredText)
-  displayCharOccurences(res)
-  print("e is the most common char in english and we know the key is only one byte long.")
-  print("Space is also very common.")
-  print("Good candidates for keys are 'e', 'E' and ' '.")
-  print("The most present char is :", hex(res[255][0]))
-  likelyKeyInt = res[255][0] ^ ord(' ')
-  likelyKey = bytearray()
-  likelyKey.extend(likelyKeyInt.to_bytes(1, byteorder='big'))
-  print("key should be", hex(likelyKeyInt))
-  print("xoring", hex(likelyKeyInt), "and cipheredText...")
-  plainText = xorKey(cipheredText, likelyKey)
-  print("Plain text :")
-  print(plainText.hex())
-  print(plainText)
+  pass
+
+
  
 
   
