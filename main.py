@@ -45,12 +45,21 @@ def xorBuffer(b1, b2):
   return b3
 
 
-def xorKey(cipheredText, key):
+def xorKey(dataIn, key):
+  """
+  Return decoded data.
+
+  Args:
+    dataIn bytearay: data to decode
+    key bytearray: key used to decode
+  Returns:
+    bytearray: dataIn ^ key
+  """
   key_len = len(key)
-  plainText = bytearray(len(cipheredText))
-  for i in range(0, len(cipheredText)):
-    plainText[i] = cipheredText[i] ^ key[i%key_len]
-  return plainText
+  dataOut = bytearray(len(dataIn))
+  for i in range(0, len(dataIn)):
+    dataOut[i] = dataIn[i] ^ key[i%key_len]
+  return dataOut
 
 
 def countByteOccurence(ba):
@@ -82,8 +91,3 @@ def displayCharOccurences(sortedOcc) :
 
 if __name__ == "__main__" :
   pass
-
-
- 
-
-  
