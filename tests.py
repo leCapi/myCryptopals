@@ -1,6 +1,8 @@
+#!/usr/bin/python3
 # pylint: disable-msg=w0614
 import unittest
 from main import *
+import os
   
 class MyTests(unittest.TestCase) :
   
@@ -31,6 +33,7 @@ class MyTests(unittest.TestCase) :
     b3.extend(b3int.to_bytes(20, byteorder='big'))
     self.assertEqual(b3, xorBuffer(b1,b2))
 
+
   def testFindingOneByteKey(self):
     print("Testing Xoring decription...")
     cipherTextStr = "0x1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
@@ -38,7 +41,6 @@ class MyTests(unittest.TestCase) :
     print("Cipher text is :", cipheredText.hex())
     res = countByteOccurence(cipheredText)
     displayCharOccurences(res)
-    print(res[0])
     self.assertEqual(res[255][0], 0x78)
     for i in range(1, 237):
       self.assertEqual(res[i][1], 0.0)
@@ -81,6 +83,56 @@ class MyTests(unittest.TestCase) :
     cipherText = xorKey(plainText, key).hex()
     print("output : " + cipherText)
     self.assertEqual(expectedResult, cipherText)
+
+
+  def testHammingDistance(self):
+    print("Testing Hamming distance computation...")
+    pattern1Str = "this is a test"
+    pattern2Str = "wokka wokka!!!"
+    pattern1 = bytearray(pattern1Str, "ascii")
+    pattern2 = bytearray(pattern2Str, "ascii")
+    expectedResult = 37
+    print("Computing hamming distance between", pattern1Str, "and", pattern2Str +":")
+    result = hammingDistance(pattern1, pattern2)
+    print("Hamming distance is " + str(result) +".")
+    self.assertEqual(expectedResult, result)
+
+
+  def testReadB64File(self):
+    print("Testing readB64File()...")
+    pathToFile = os.path.dirname(os.path.realpath(__file__)) + "/set1/testReadB64.txt"
+    ba = readB64File(pathToFile)
+    print(ba)
+    expectedRes = "abcdefhH87"
+    self.assertEqual(expectedRes, ba.decode("ascii"))
+
+
+  def testSplitBytearray(self):
+    print("Testing testSplitBytearray()...")
+    ba = hexStrToByteArray("0xffaabb11cc99ee88dd")
+    expectedRes1 = [bytearray(b'\xff\xbb\xcc\xee\xdd'), bytearray(b'\xaa\x11\x99\x88')]
+    expectedRes2 = [bytearray(b'\xff\x11\xee'), bytearray(b'\xaa\xcc\x88'), bytearray(b'\xbb\x99\xdd')]
+    res1 = splitByteArray(ba, 2)
+    res2 = splitByteArray(ba, 3)
+    self.assertEqual(ba, splitByteArray(ba,1)[0])
+    self.assertEqual(expectedRes1, res1)
+    self.assertEqual(expectedRes2, res2)
+
+  def testDecryptXorText(self):
+    print(">>> Resolving set1/challenge6.txt")
+    path_to_challenge6 = os.path.dirname(os.path.realpath(__file__)) + "/set1/challenge6.txt"
+    cipher_text = readB64File(path_to_challenge6)
+    plain_text = decrypt_xor_text(cipher_text)
+    self.assertEqual("I'm back and", plain_text[0:12].decode("utf-8"))
+
+    print(">>> Resolving set1/my_plain_b64.txt")
+    path_to_my_plain = os.path.dirname(os.path.realpath(__file__)) + "/set1/my_plain_b64.txt"
+    my_key = bytearray("goodd", "ascii")
+    plain_text = readB64File(path_to_my_plain)
+    cipher_text = xorKey(plain_text, my_key)
+    plain_text_back = decrypt_xor_text(cipher_text)
+    self.assertEqual(plain_text, plain_text_back)
+
 
 if __name__ == "__main__" :
   unittest.main()
