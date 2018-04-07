@@ -115,6 +115,7 @@ class MyTests(unittest.TestCase):
         self.assertEqual(expected_res_1, res1)
         self.assertEqual(expected_res_2, res2)
 
+    # set 1 challenge 6
     def test_decrypt_xor_text(self):
         print(">>> Resolving set1/challenge6.txt")
         path_to_challenge6 = os.path.dirname(os.path.realpath(__file__)) + "/set1/challenge6.txt"
@@ -129,6 +130,17 @@ class MyTests(unittest.TestCase):
         cipher_text = xor_key(plain_text, my_key)
         plain_text_back = decrypt_xor_text(cipher_text)
         self.assertEqual(plain_text, plain_text_back)
+
+    # set 1 challenge 7
+    def test_decoding_aes(self):
+        print(">>> Resolving set1/challenge7.txt")
+        path_to_challenge7 = os.path.dirname(os.path.realpath(__file__)) + "/set1/challenge7.txt"
+        cipher_text = read_b64_file(path_to_challenge7)
+        key = "YELLOW SUBMARINE"
+        obj = AES.new(key, AES.MODE_ECB)
+        plain_text = obj.decrypt(cipher_text).decode("utf-8")
+        print(plain_text)
+        self.assertEqual("I'm back and", plain_text[0:12])
 
 
 if __name__ == "__main__":

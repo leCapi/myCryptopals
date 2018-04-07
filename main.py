@@ -4,6 +4,7 @@ import codecs
 import sys
 import operator
 import os
+from Crypto.Cipher import AES
 
 
 def hex_str_to_bytearray(s):
