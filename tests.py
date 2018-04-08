@@ -172,6 +172,14 @@ class MyTests(unittest.TestCase):
         self.assertEqual(7, min_patterns)
         self.assertEqual(132, min_patterns_rank)
 
+    # set 2 Challenge 9
+    def test_fill_PKCS7(self):
+        block_fo_fill = bytearray("YELLOW SUBMARINE", "ascii")
+        expected_result = bytearray("YELLOW SUBMARINE\x04\x04\x04\x04", "ascii")
+        filled_block = padding_block(block_fo_fill, 20)
+        self.assertEqual(expected_result, filled_block)
+        self.assertEqual(padding_block(filled_block, 20), filled_block)
+
 
 if __name__ == "__main__":
     unittest.main()

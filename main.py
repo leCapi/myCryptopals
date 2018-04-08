@@ -6,7 +6,7 @@ import operator
 import os
 from Crypto.Cipher import AES
 
-
+# this function seems usless since bytearray.fromhex() exists
 def hex_str_to_bytearray(s):
     ba = bytearray()
     len_str = len(s)
@@ -225,6 +225,30 @@ def pattern_inventory(ba, block_len):
         pattern = ba[i:i + block_len]
         result.add(int.from_bytes(pattern, byteorder='big', signed=False))
     return result
+
+
+def padding_block(block_to_fill, block_len):
+    """
+    Return a padded block of data with PKCS#7
+    Args:
+      block_to_fill bytearray: bytearray to complete
+      block_len int: size of block
+    Returns:
+      bytearray: completed block following PCKS#7 convention
+    """
+    len_block_to_fill = len(block_to_fill)
+    if len_block_to_fill == block_len:
+        return block_to_fill
+    elif len_block_to_fill > block_len:
+        return None
+    print("bb", block_len, len_block_to_fill)
+    block = bytearray(block_len)
+    for i in range(0, len_block_to_fill):
+        block[i] = block_to_fill[i]
+    pattern_and_number = block_len - len_block_to_fill
+    for i in range(len_block_to_fill, len_block_to_fill + pattern_and_number):
+        block[i] = pattern_and_number
+    return block
 
 
 if __name__ == "__main__":
