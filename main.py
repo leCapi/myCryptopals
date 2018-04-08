@@ -9,7 +9,12 @@ from Crypto.Cipher import AES
 
 def hex_str_to_bytearray(s):
     ba = bytearray()
-    nb_bytes = (len(s) // 2) - 2 + 1
+    len_str = len(s)
+    if s[0:2] == "0x":
+        len_str -= 2
+    nb_bytes = (len_str // 2)
+    if len_str % 2 != 0:
+        nb_bytes += 1
     bInt = int(s, 16)
     ba.extend(bInt.to_bytes(nb_bytes, byteorder='big'))
     return ba
@@ -27,7 +32,7 @@ def rate_alpha_num_space(ba):
     len_ba = len(ba)
 
     for i in ba:
-        if i == (0x20 or (ord('a') <= i <= ord('z'))
+        if (i == 0x20 or (ord('a') <= i <= ord('z'))
                  or (ord('A') <= i <= ord('Z'))):
             nb_alpha_num_space += 1
 

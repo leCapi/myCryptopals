@@ -54,14 +54,14 @@ class MyTests(unittest.TestCase):
             likely_key_int = res[255][0] ^ ord(char)
             likely_key = bytearray()
             likely_key.extend(likely_key_int.to_bytes(1, byteorder='big'))
-            print("trying key", hex(likely_key_int), "deduced assuming the most presnt char is", char + ".")
+            print("trying key", hex(likely_key_int), "deduced assuming the most present char is", hex(ord(char)), char + ".")
             print("xoring", hex(likely_key_int), "and cipher_text...")
             plain_text = xor_key(cipher_text, likely_key)
             if is_plain_text(plain_text):
-                print("The message seems readable. The key seems to be ", hex(likely_key_int) + ".")
-                print("Plain Message: ", str(plain_text))
+                print("The message seems readable. The key seems to be", hex(likely_key_int) + ".")
+                print("Plain Message:", plain_text.decode("utf-8"))
             else:
-                print("The message seems not readable. The key seems not to be ", hex(likely_key_int) + ".")
+                print("The message seems not readable. The key seems not to be", hex(likely_key_int) + ".")
             return plain_text
 
         try_key('e')
@@ -145,3 +145,4 @@ class MyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+ 
