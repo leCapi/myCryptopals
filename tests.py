@@ -142,6 +142,36 @@ class MyTests(unittest.TestCase):
         print(plain_text)
         self.assertEqual("I'm back and", plain_text[0:12])
 
+    # set 1 challenge 8
+    def test_spot_aes_128_ecb(self):
+        path_to_challenge8 = (os.path.dirname(os.path.realpath(__file__))
+                          + "/set1/challenge8.txt")
+        try:
+            file = open(path_to_challenge8, 'r')
+        except (OSError, IOError) as e:
+            print("Can't open file " + path_to_challenge8 + "(" + e.errno + ")" + ".")
+        texts = list()
+        for line in file:
+            lineWithoutReturn = line.rstrip()
+            texts.append(hex_str_to_bytearray(lineWithoutReturn))
+        file.close()
+
+        print("There are " + str(len(texts)) + " texts.")
+        min_patterns = 16
+        min_patterns_rank = 0
+        for i,text in enumerate(texts):
+            patterns = pattern_inventory(text, 16)
+            if len(patterns) < min_patterns:
+                min_patterns = len(patterns)
+                min_patterns_rank = i
+        print("The text with the minium of 16 bytes patterns among all"
+            " is the text number "
+            + str(min_patterns_rank) + " with " + str(min_patterns) + " patterns.")
+        print(hex(text[min_patterns_rank]))
+        print(pattern_inventory(texts[132], 16))
+        self.assertEqual(7, min_patterns)
+        self.assertEqual(132, min_patterns_rank)
+
 
 if __name__ == "__main__":
     unittest.main()

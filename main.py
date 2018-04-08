@@ -217,5 +217,15 @@ def decrypt_xor_text(cipher_text):
     return plain_text
 
 
+def pattern_inventory(ba, block_len):
+    if len(ba) % block_len != 0:
+        return None
+    result = set()
+    for i in range(0, len(ba), block_len):
+        pattern = ba[i:i + block_len]
+        result.add(int.from_bytes(pattern, byteorder='big', signed=False))
+    return result
+
+
 if __name__ == "__main__":
     pass
