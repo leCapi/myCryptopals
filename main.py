@@ -218,6 +218,16 @@ def decrypt_xor_text(cipher_text):
 
 
 def pattern_inventory(ba, block_len):
+    """
+    Return the set of all the pattern of size block_len
+    in input ba
+    The size of ba must be a multiple of block_len
+    Args:
+      ba bytearray: bytearray where patterns are inventoried
+      block_len: size of the patterns
+    Returns:
+      set: set of all patterns presents in ba
+    """
     if len(ba) % block_len != 0:
         return None
     result = set()
@@ -250,6 +260,14 @@ def padding_block(block_to_fill, block_len):
         block[i] = pattern_and_number
     return block
 
+def aes_cipher_ecb(ba, key):
+    obj = AES.new(bytes(key), AES.MODE_ECB)
+    cipher_text = obj.encrypt(bytes(ba))
+    return cipher_text
+
+def cipher_cbc(cipher_function, key, plain_text, initialization_vector):
+    if len(plain_text)%len(initialization_vector) != 0:
+        raise ValueError("Wrong len")
 
 if __name__ == "__main__":
     pass

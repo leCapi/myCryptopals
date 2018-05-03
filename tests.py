@@ -180,7 +180,17 @@ class MyTests(unittest.TestCase):
         self.assertEqual(expected_result, filled_block)
         self.assertEqual(padding_block(filled_block, 20), filled_block)
 
+    # set 2 Challenge 10
+    def test_aes_encrypt_ecb(self):
+        # 16 bytes len key
+        key = bytearray("0123456789ABCDEF", "ascii")
+        # 16 bytes len text
+        plain_text = bytearray("YELLOW SUMBAMINE", "ascii")
+        print("plain text : ", plain_text.decode("ascii"))
+        cipher_text = aes_cipher_ecb(plain_text,key)
+        print("cipher text : ", cipher_text)
+        expected_result = bytearray(b'\x90\x8a\xa8\xbe\xd2\x75\x6a\x0d\x53\x1a\x81\x0e\x2d\xfe\x45\xc2')
+        self.assertEqual(expected_result, cipher_text)
 
 if __name__ == "__main__":
     unittest.main()
- 
