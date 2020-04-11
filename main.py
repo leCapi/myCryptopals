@@ -6,7 +6,9 @@ import operator
 import os
 from Crypto.Cipher import AES
 
-# this function seems usless since bytearray.fromhex() exists
+aes_block_size = 16
+
+# this function seems useless since bytearray.fromhex() exists
 def hex_str_to_bytearray(s):
     ba = bytearray()
     len_str = len(s)
@@ -59,7 +61,7 @@ def xor_key(data_in, key):
     Return xored data.
 
     Args:
-        data_in bytearay: data to decode
+        data_in bytearray: data to decode
         key bytearray: key used to decode
     Returns:
         bytearray: data_in ^ key
@@ -71,7 +73,7 @@ def xor_key(data_in, key):
     return dataOut
 
 
-def count_byte_occurence(ba):
+def count_byte_occurrence(ba):
     """
     Return sorted list of tuple.
 
@@ -92,7 +94,7 @@ def count_byte_occurence(ba):
     return sortedBytes
 
 
-def display_char_occurences(sortedOcc):
+def display_char_occurrences(sortedOcc):
     for i in reversed(sortedOcc):
         if i[1] == 0:
             break
@@ -156,7 +158,7 @@ def split_bytearray(ba, nb_ba):
     tab = list()
     len_ba = len(ba)
 
-    # create sub bytearray with appropirate len
+    # create sub bytearray with appropriate len
     rest = len_ba % nb_ba
     for i in range(0, nb_ba):
         len_sub_ba = len_ba // nb_ba
@@ -198,10 +200,10 @@ def decrypt_xor_text(cipher_text):
     print("display of the most common bytes of each sets")
     byte_occ_list = list()
     for i in subtext:
-        byte_occ_list.append(count_byte_occurence(i)[250:256])
+        byte_occ_list.append(count_byte_occurrence(i)[250:256])
     for index, i in enumerate(byte_occ_list):
         print("###", index)
-        display_char_occurences(i)
+        display_char_occurrences(i)
 
     for i in byte_occ_list:
         most_present_byte = i[-1][0]
@@ -260,14 +262,58 @@ def padding_block(block_to_fill, block_len):
         block[i] = pattern_and_number
     return block
 
-def aes_cipher_ecb(ba, key):
+def aes_encrypt_ecb(ba, key):
     obj = AES.new(bytes(key), AES.MODE_ECB)
     cipher_text = obj.encrypt(bytes(ba))
     return cipher_text
 
-def cipher_cbc(cipher_function, key, plain_text, initialization_vector):
-    if len(plain_text)%len(initialization_vector) != 0:
-        raise ValueError("Wrong len")
+def aes_decrypt_ecb(ba, key):
+    obj = AES.new(bytes(key), AES.MODE_ECB)
+    decrypted_text = obj.decrypt(bytes(ba))
+    return decrypted_text
+
+def split_bytearray_to_blocks(ba, block_size):
+    """
+    Split a bytearray into several bytearrays.
+    The bytes are split in round robin between the output bytearrays.
+
+    Args:
+      ba bytearray: bytearray to split
+      block_size int: size of outputs
+    Returns:
+      list: list of bytearrays of size blocksize
+    """
+    tab = list()
+    len_ba = len(ba)
+    start_index = 0
+    end_index = block_size
+    while(end_index < len_ba):
+        tab.append(ba[start_index:end_index])
+        start_index = end_index
+        end_index += block_size
+
+    if start_index < len_ba:
+        last_chunk = padding_block(ba[start_index:len_ba] ,aes_block_size)
+        tab.append(last_chunk)
+
+    return tab
+
+def aes_encrypt_cbc(key, plain_text, initialization_vector):
+    previous_result = initialization_vector
+
+def aes_decrypt_cbc(key, cipher_text, initialization_vector):
+    if len(initialization_vector) != aes_block_size:
+        raise ValueError("Initialization vector wrong size")
+    plain_text = bytearray()
+    chunks_cipher_text = split_bytearray_to_blocks(cipher_text, aes_block_size)
+    previous_result = initialization_vector
+    for chunk in chunks_cipher_text:
+        aes_deciphered_chunk = aes_decrypt_ecb(chunk, key)
+        plain_chunk = xor_buffer(previous_result, aes_deciphered_chunk)
+        previous_result = chunk
+        plain_text.extend(plain_chunk)
+    return plain_text
+
 
 if __name__ == "__main__":
     pass

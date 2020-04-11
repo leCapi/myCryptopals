@@ -40,8 +40,8 @@ class MyTests(unittest.TestCase):
         cipher_text_str = "0x1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"
         cipher_text = hex_str_to_bytearray(cipher_text_str)
         print("Cipher text is:", cipher_text.hex())
-        res = count_byte_occurence(cipher_text)
-        display_char_occurences(res)
+        res = count_byte_occurrence(cipher_text)
+        display_char_occurrences(res)
         self.assertEqual(res[255][0], 0x78)
         for i in range(1, 237):
             self.assertEqual(res[i][1], 0.0)
@@ -187,10 +187,24 @@ class MyTests(unittest.TestCase):
         # 16 bytes len text
         plain_text = bytearray("YELLOW SUMBAMINE", "ascii")
         print("plain text : ", plain_text.decode("ascii"))
-        cipher_text = aes_cipher_ecb(plain_text,key)
+        cipher_text = aes_encrypt_ecb(plain_text, key)
         print("cipher text : ", cipher_text)
         expected_result = bytearray(b'\x90\x8a\xa8\xbe\xd2\x75\x6a\x0d\x53\x1a\x81\x0e\x2d\xfe\x45\xc2')
         self.assertEqual(expected_result, cipher_text)
+
+    def test_aes_decrypt_cbc(self):
+        path_to_challenge10 = os.path.dirname(os.path.realpath(__file__)) + "/set2/challenge10.txt"
+        cipher_text = None
+        with open(path_to_challenge10, 'r') as file:
+            cipher_text = read_b64_file(path_to_challenge10)
+        init_vector = bytearray(aes_block_size)
+        print("toto")
+        print(len(init_vector))
+        key = bytearray("YELLOW SUBMARINE", "ascii")
+        plain_text = aes_decrypt_cbc(key, cipher_text, init_vector).decode("utf_8")
+        self.assertEqual(plain_text.find("\nSo punks stop trying and girl stop cryin\' \nVanilla Ice is sellin\' and you people are "), 1428)
+        # self.assertEqual(plain_text.find("allowed \nI\'m in my own phase \nThe girlies sa y they love me and that is ok \nAnd I can dance better than any kid n"))
+        # print(plain_text)
 
 if __name__ == "__main__":
     unittest.main()
