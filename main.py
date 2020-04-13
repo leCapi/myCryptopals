@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import base64
 import codecs
+import random
 import sys
 import operator
 import os
@@ -253,7 +254,6 @@ def padding_block(block_to_fill, block_len):
         return block_to_fill
     elif len_block_to_fill > block_len:
         return None
-    print("bb", block_len, len_block_to_fill)
     block = bytearray(block_len)
     for i in range(0, len_block_to_fill):
         block[i] = block_to_fill[i]
@@ -262,9 +262,16 @@ def padding_block(block_to_fill, block_len):
         block[i] = pattern_and_number
     return block
 
-def aes_encrypt_ecb(ba, key):
+def aes_encrypt_ecb(plain_text, key):
     obj = AES.new(bytes(key), AES.MODE_ECB)
-    cipher_text = obj.encrypt(bytes(ba))
+
+    cipher_text = bytearray()
+    chunks_plain_text = split_bytearray_to_blocks(plain_text, aes_block_size)
+
+    for chunk in chunks_plain_text:
+        aes_ciphered_chunk = obj.encrypt(bytes(chunk))
+        cipher_text.extend(aes_ciphered_chunk)
+
     return cipher_text
 
 def aes_decrypt_ecb(ba, key):
@@ -299,7 +306,19 @@ def split_bytearray_to_blocks(ba, block_size):
     return tab
 
 def aes_encrypt_cbc(key, plain_text, initialization_vector):
+    if len(initialization_vector) != aes_block_size:
+        raise ValueError("Initialization vector wrong size")
+    cipher_text = bytearray()
+    chunks_plain_text = split_bytearray_to_blocks(plain_text, aes_block_size)
     previous_result = initialization_vector
+
+    for chunk in chunks_plain_text:
+        xor_chunk_chunk = xor_buffer(previous_result, chunk)
+        aes_ciphered_chunk = aes_encrypt_ecb(xor_chunk_chunk, key)
+        previous_result = aes_ciphered_chunk
+        cipher_text.extend(aes_ciphered_chunk)
+
+    return cipher_text
 
 def aes_decrypt_cbc(key, cipher_text, initialization_vector):
     if len(initialization_vector) != aes_block_size:
@@ -307,12 +326,72 @@ def aes_decrypt_cbc(key, cipher_text, initialization_vector):
     plain_text = bytearray()
     chunks_cipher_text = split_bytearray_to_blocks(cipher_text, aes_block_size)
     previous_result = initialization_vector
+
     for chunk in chunks_cipher_text:
         aes_deciphered_chunk = aes_decrypt_ecb(chunk, key)
         plain_chunk = xor_buffer(previous_result, aes_deciphered_chunk)
         previous_result = chunk
         plain_text.extend(plain_chunk)
+
     return plain_text
+
+def generate_random_aes_key():
+    """
+    Generate a random 128 bits AES key
+    """
+    random_key = bytearray()
+    random_key.extend(os.urandom(16))
+    return random_key
+
+def random_padding(plain_text):
+    """
+    Append and prepend 5-10 random bytes to the plain_text
+    """
+    rdm_buffer_size_prepended = random.randint(5,10)
+    rdm_buffer_size_appended = random.randint(5,10)
+
+    extended_plain_text = bytearray()
+    extended_plain_text.extend(os.urandom(rdm_buffer_size_prepended))
+    extended_plain_text.extend(plain_text)
+    extended_plain_text.extend(os.urandom(rdm_buffer_size_appended))
+
+    return extended_plain_text
+
+def encrypt_cbc_aes_rdm_key_rdm_IV(plain_text):
+    """
+    Encrypt input data(bytearray) with both random IV and key
+    Append and prepend 5-10 random bytes to the plain_text
+    """
+    init_vector = generate_random_aes_key()
+    key = generate_random_aes_key()
+    extended_plain_text = random_padding(plain_text)
+  
+    return aes_encrypt_cbc(key, extended_plain_text, init_vector)
+
+def encrypt_ecb_aes_rdm_key(plain_text):
+    key = generate_random_aes_key()
+    extended_plain_text = random_padding(plain_text)
+
+    return aes_encrypt_ecb(extended_plain_text, key)
+
+def rdm_encrypt_aes_cbc_or_ecb(plain_text):
+    aes_ecb_or_aes_cbc = random.randint(0,1)
+    if aes_ecb_or_aes_cbc == 0:
+        return encrypt_ecb_aes_rdm_key(plain_text), 0
+    elif aes_ecb_or_aes_cbc == 1:
+        return encrypt_cbc_aes_rdm_key_rdm_IV(plain_text), 1
+    else:
+        raise Exception("This should not happen")
+
+def oracle_aes_ecb_or_aes_cbc(cipher_text):
+    """
+    return 0 if the aes cipher text is ecb and 1 if cbc
+    """
+    second_cipher_block = cipher_text[16:32]
+    third_cipher_block = cipher_text[32:48]
+    if second_cipher_block == third_cipher_block:
+        return 0
+    return 1
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 import unittest
 from main import *
 import os
+import sys
 
 
 class MyTests(unittest.TestCase):
@@ -198,13 +199,31 @@ class MyTests(unittest.TestCase):
         with open(path_to_challenge10, 'r') as file:
             cipher_text = read_b64_file(path_to_challenge10)
         init_vector = bytearray(aes_block_size)
-        print("toto")
-        print(len(init_vector))
         key = bytearray("YELLOW SUBMARINE", "ascii")
         plain_text = aes_decrypt_cbc(key, cipher_text, init_vector).decode("utf_8")
         self.assertEqual(plain_text.find("\nSo punks stop trying and girl stop cryin\' \nVanilla Ice is sellin\' and you people are "), 1428)
-        # self.assertEqual(plain_text.find("allowed \nI\'m in my own phase \nThe girlies sa y they love me and that is ok \nAnd I can dance better than any kid n"))
-        # print(plain_text)
+        plain_text_ba = bytearray(plain_text, "utf_8")
+        re_cipher = aes_encrypt_cbc(key, plain_text_ba, init_vector)
+        self.assertEqual(cipher_text, re_cipher)
+
+    # set 2 Challenge 11
+    def test_rdm_aes_key(self):
+        k1 = generate_random_aes_key()
+        k2 = generate_random_aes_key()
+        k3 = generate_random_aes_key()
+        self.assertEqual(len(k1),16)
+        self.assertEqual(len(k2),16)
+        self.assertEqual(len(k3),16)
+        self.assertFalse(k1 == k2, "this is very unlikely to happen")
+        self.assertFalse(k1 == k3, "this is very unlikely to happen")
+        self.assertFalse(k2 == k3, "this is very unlikely to happen")
+    
+    def test_ecb_oracle(self):
+        plain_text = bytearray(b'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ')
+        for i in range(0,100):
+            cipher_text, mod = rdm_encrypt_aes_cbc_or_ecb(plain_text)
+            prediction = oracle_aes_ecb_or_aes_cbc(cipher_text)
+            self.assertEqual(prediction, mod)
 
 if __name__ == "__main__":
-    unittest.main()
+    sys.exit(unittest.main())
