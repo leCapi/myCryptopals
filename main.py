@@ -131,17 +131,14 @@ def read_b64_file(path):
     Returns:
         bytearray: data decoded from message in the given file
     """
-    try:
-        file = open(path, 'r')
-    except (OSError, IOError) as e:
-        print("Can't open file " + path + "(" + e.errno + ")" + ".")
-        return None
-    string_file = str()
-    for line in file:
-        lineWithoutReturn = line.rstrip()
-        string_file += lineWithoutReturn
-    res = base64.b64decode(string_file)
-    file.close()
+    res = None
+    with open(path, 'r') as file:
+        string_file = str()
+        for line in file:
+            lineWithoutReturn = line.rstrip()
+            string_file += lineWithoutReturn
+        res = base64.b64decode(string_file)
+
     return res
 
 
@@ -392,7 +389,6 @@ def oracle_aes_ecb_or_aes_cbc(cipher_text):
     if second_cipher_block == third_cipher_block:
         return 0
     return 1
-
 
 if __name__ == "__main__":
     pass

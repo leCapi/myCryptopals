@@ -187,17 +187,15 @@ class MyTests(unittest.TestCase):
         key = bytearray("0123456789ABCDEF", "ascii")
         # 16 bytes len text
         plain_text = bytearray("YELLOW SUMBAMINE", "ascii")
-        print("plain text : ", plain_text.decode("ascii"))
+        # print("plain text : ", plain_text.decode("ascii"))
         cipher_text = aes_encrypt_ecb(plain_text, key)
-        print("cipher text : ", cipher_text)
+        # print("cipher text : ", cipher_text)
         expected_result = bytearray(b'\x90\x8a\xa8\xbe\xd2\x75\x6a\x0d\x53\x1a\x81\x0e\x2d\xfe\x45\xc2')
         self.assertEqual(expected_result, cipher_text)
 
     def test_aes_decrypt_cbc(self):
         path_to_challenge10 = os.path.dirname(os.path.realpath(__file__)) + "/set2/challenge10.txt"
-        cipher_text = None
-        with open(path_to_challenge10, 'r') as file:
-            cipher_text = read_b64_file(path_to_challenge10)
+        cipher_text = read_b64_file(path_to_challenge10)
         init_vector = bytearray(aes_block_size)
         key = bytearray("YELLOW SUBMARINE", "ascii")
         plain_text = aes_decrypt_cbc(key, cipher_text, init_vector).decode("utf_8")
@@ -224,6 +222,65 @@ class MyTests(unittest.TestCase):
             cipher_text, mod = rdm_encrypt_aes_cbc_or_ecb(plain_text)
             prediction = oracle_aes_ecb_or_aes_cbc(cipher_text)
             self.assertEqual(prediction, mod)
+    ########################################################
+
+    # set 2 Challenge 12
+    def test_ecb_cracking(self):
+        path_to_challenge11 = os.path.dirname(os.path.realpath(__file__)) + "/set2/challenge12.txt"
+        text_to_discover = read_b64_file(path_to_challenge11)
+
+        def black_box_to_crack(plain_text):
+            full_text = plain_text + text_to_discover
+            unknown_secret_key = bytearray(b'this_is_a_secret')
+            return aes_encrypt_ecb(full_text, unknown_secret_key)
+
+        def discover_block_size():
+            plain_text = bytearray()
+            initial_len = len(black_box_to_crack(plain_text))
+            for i in range(0,128):
+                plain_text.extend(b"a")
+                new_len = len(black_box_to_crack(plain_text))
+                if new_len != initial_len:
+                    return (new_len - initial_len), initial_len - i
+            return -1, -1
+
+        bb_output = black_box_to_crack(bytearray(b"ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ"))
+        mod = oracle_aes_ecb_or_aes_cbc(bb_output)
+        self.assertEqual(mod, 0)
+        block_size, unknown_text_size = discover_block_size()
+        self.assertEqual(block_size, 16)
+        self.assertEqual(unknown_text_size, 138)
+        
+        def find_text_to_discover(text_size, tester):
+            secret_plain_text = bytearray()
+            shifter = bytearray(b'aaaaaaaaaaaaaaa')
+            secret_plain_text = shifter[:]
+            for i in range(0, text_size):
+                shift_len = 15 - (i % 16)
+                shift_used = shifter[:shift_len]
+                cipher_block_number = i // 16
+                start_output = cipher_block_number * 16
+                end_output = start_output + 15
+                ciphered_block_to_guess = black_box_to_crack(shift_used)[start_output:end_output]
+                len_spt = len(secret_plain_text)
+                # 15 bytes of data we are sure
+                data_to_test = secret_plain_text[len_spt-15:]
+                # let s find the last byte
+                byte_found = False
+                for plain_byte in range(0,256):
+                    complete_chunk_to_test = data_to_test[:]
+                    complete_chunk_to_test.append(plain_byte)
+                    candidate_ciphered_block = black_box_to_crack(complete_chunk_to_test)[0:15]
+                    if candidate_ciphered_block == ciphered_block_to_guess:
+                        secret_plain_text.append(plain_byte)
+                        byte_found = True
+                        break
+                tester.assertTrue(byte_found)
+            return secret_plain_text[15:]
+
+        discovered_text = find_text_to_discover(unknown_text_size, self)
+        self.assertEqual(discovered_text, text_to_discover)
+        self.assertTrue
 
 if __name__ == "__main__":
     sys.exit(unittest.main())
