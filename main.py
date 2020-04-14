@@ -190,30 +190,23 @@ def guess_key_len_HD(ba, max_len):
 
 def decrypt_xor_text(cipher_text):
     secret_key = bytearray()
-
+    # best key length using hamming distance method:
     key_len = guess_key_len_HD(cipher_text, 42)
-    print("best key length using hamming distance method:", key_len)
     subtext = split_bytearray(cipher_text, key_len)
 
-    print("display of the most common bytes of each sets")
     byte_occ_list = list()
     for i in subtext:
         byte_occ_list.append(count_byte_occurrence(i)[250:256])
-    for index, i in enumerate(byte_occ_list):
-        print("###", index)
-        display_char_occurrences(i)
+    # for index, i in enumerate(byte_occ_list):
+    #     print("###", index)
+    #     display_char_occurrences(i)
 
     for i in byte_occ_list:
         most_present_byte = i[-1][0]
         char_key = most_present_byte ^ 0x20
         secret_key.append(char_key)
-        print("xoring " + hex(most_present_byte) + " and 0x20: ",
-              chr(char_key), hex(char_key))
 
-    print("The secrekt key is: " + 'secret_key.decode("ascii")')
-    print("The plain text is:")
     plain_text = xor_key(cipher_text, secret_key)
-    print(plain_text.decode("utf-8"))
     return plain_text
 
 
