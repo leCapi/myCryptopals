@@ -252,6 +252,21 @@ def padding_block(block_to_fill, block_len):
         block[i] = pattern_and_number
     return block
 
+def clean_padding(data_to_clean, block_len):
+    """
+    Clean PKCS#7 padding
+    Returns:
+      bytearray: clean input bytearray
+    """
+    len_data = len(data_to_clean)
+    padding_size = data_to_clean[len_data - 1]
+
+    for i in range(1, padding_size + 1):
+        if data_to_clean[len_data - i] != padding_size:
+            return data_to_clean
+
+    return data_to_clean[:len_data-padding_size]
+
 def aes_encrypt_ecb(plain_text, key):
     obj = AES.new(bytes(key), AES.MODE_ECB)
 

@@ -154,6 +154,7 @@ class MyTests(unittest.TestCase):
         filled_block = padding_block(block_fo_fill, 20)
         self.assertEqual(expected_result, filled_block)
         self.assertEqual(padding_block(filled_block, 20), filled_block)
+        self.assertEqual(clean_padding(expected_result,aes_block_size), block_fo_fill)
 
     # set 2 Challenge 10
     def test_aes_encrypt_ecb(self):
@@ -253,6 +254,87 @@ class MyTests(unittest.TestCase):
         discovered_text = find_text_to_discover(unknown_text_size, self)
         self.assertEqual(discovered_text, text_to_discover)
         self.assertTrue
+    ########################################################
 
+    # set 2 Challenge 13
+    def test_ecb_cut_and_past(self):
+        def cookie_to_dict(input_cookie):
+            parsed_cookie = {}
+            list_k_v = input_cookie.split('&')
+            for e in list_k_v:
+                key_value = e.split('=')
+                if len(key_value) != 2:
+                    raise ValueError("Invalid cookie")
+                key = key_value[0]
+                value = key_value[1]
+                parsed_cookie[key] = value
+            return parsed_cookie
+
+        def dict_to_cookie(dictionary):
+            output = str()
+            first_loop = True
+            for k,v in dictionary.items():
+                if first_loop:
+                    first_loop = False
+                else:
+                    output += "&"
+                output += k
+                output += "="
+                output += v
+            return bytearray(output, "ascii")
+
+        def profile_for(mail):
+            prof = {}
+            protected_mail = mail.replace('&', '')
+            protected_mail = protected_mail.replace('=', '')
+            prof["email"] = protected_mail
+            prof["uid"] = "10"
+            prof["role"] = "user"
+            return prof
+
+        def cipher_profile_for(mail):
+            plain_profile = profile_for(mail)
+            serialized_profile = dict_to_cookie(plain_profile)
+            ciphered_profile = aes_encrypt_ecb(serialized_profile, aes_secret_key)
+            return bytearray(ciphered_profile)
+
+        def load_cipher_data(ciphered_data):
+            plain_data = aes_decrypt_ecb(ciphered_data, aes_secret_key)
+            plain_data = clean_padding(plain_data, aes_block_size)
+            data = cookie_to_dict(plain_data.decode("ascii"))
+            return data
+
+        test_cookie = "foo=bar&baz=qux&zap=zazzle"
+        test_profile_for = "foo=&&&&=@bar.com"
+        aes_secret_key = generate_random_aes_key()
+
+        # test functions defined for exercise
+        cookie_dict = cookie_to_dict(test_cookie)
+        cookie = dict_to_cookie(cookie_dict)
+        self.assertEqual(cookie.decode("ascii"), test_cookie)
+        data_ciphered = cipher_profile_for(test_profile_for)
+        data = load_cipher_data(data_ciphered)
+        print(data)
+        self.assertEqual(data["email"], "foo@bar.com")
+        self.assertEqual(data["uid"], "10")
+        self.assertEqual(data["role"], "user")
+
+        # find admin cipher value when isolated in a single block (need to pad)
+        admin_cipher_input = bytearray(b'AAAAAAAAAAadmin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b')
+        cipher_output_admin = cipher_profile_for(admin_cipher_input.decode("ascii"))
+        admin_block = cipher_output_admin[aes_block_size:2*aes_block_size]
+        # isolate the role value in the last block
+        attacker_email = "foo@barrr.com"
+        input_isolate_role_block = attacker_email
+        cipher_role_isolate = cipher_profile_for(input_isolate_role_block)
+        # craft data admin data without aes key
+        crafted_admin = cipher_role_isolate[:2*aes_block_size]
+        crafted_admin.extend(admin_block)
+        data_loaded = load_cipher_data(crafted_admin)
+        self.assertEqual(data_loaded["email"], attacker_email)
+        self.assertEqual(data_loaded["uid"], "10")
+        self.assertEqual(data_loaded["role"], "admin")
+
+    ########################################################
 if __name__ == "__main__":
     sys.exit(unittest.main())
