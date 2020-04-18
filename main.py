@@ -237,7 +237,7 @@ def padding_block(block_to_fill, block_len):
       block_to_fill bytearray: bytearray to complete
       block_len int: size of block
     Returns:
-      bytearray: completed block following PCKS#7 convention
+      bytearray: completed block following PKCS#7 convention
     """
     len_block_to_fill = len(block_to_fill)
     if len_block_to_fill == block_len:
@@ -252,7 +252,7 @@ def padding_block(block_to_fill, block_len):
         block[i] = pattern_and_number
     return block
 
-def clean_padding(data_to_clean, block_len):
+def clean_padding(data_to_clean, block_len=aes_block_size):
     """
     Clean PKCS#7 padding
     Returns:

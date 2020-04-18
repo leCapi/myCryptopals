@@ -199,8 +199,8 @@ class MyTests(unittest.TestCase):
 
     # set 2 Challenge 12
     def test_ecb_cracking(self):
-        path_to_challenge11 = os.path.dirname(os.path.realpath(__file__)) + "/set2/challenge12.txt"
-        text_to_discover = read_b64_file(path_to_challenge11)
+        path_to_challenge12 = os.path.dirname(os.path.realpath(__file__)) + "/set2/challenge12.txt"
+        text_to_discover = read_b64_file(path_to_challenge12)
 
         def black_box_to_crack(plain_text):
             full_text = plain_text + text_to_discover
@@ -233,7 +233,7 @@ class MyTests(unittest.TestCase):
                 shift_used = shifter[:shift_len]
                 cipher_block_number = i // 16
                 start_output = cipher_block_number * 16
-                end_output = start_output + 15
+                end_output = start_output + 16
                 ciphered_block_to_guess = black_box_to_crack(shift_used)[start_output:end_output]
                 len_spt = len(secret_plain_text)
                 # 15 bytes of data we are sure
@@ -243,7 +243,7 @@ class MyTests(unittest.TestCase):
                 for plain_byte in range(0,256):
                     complete_chunk_to_test = data_to_test[:]
                     complete_chunk_to_test.append(plain_byte)
-                    candidate_ciphered_block = black_box_to_crack(complete_chunk_to_test)[0:15]
+                    candidate_ciphered_block = black_box_to_crack(complete_chunk_to_test)[0:16]
                     if candidate_ciphered_block == ciphered_block_to_guess:
                         secret_plain_text.append(plain_byte)
                         byte_found = True
@@ -334,7 +334,117 @@ class MyTests(unittest.TestCase):
         self.assertEqual(data_loaded["email"], attacker_email)
         self.assertEqual(data_loaded["uid"], "10")
         self.assertEqual(data_loaded["role"], "admin")
-
     ########################################################
+
+    # set 2 Challenge 14
+    def test_ecb_cracking_harder(self):
+        path_to_challenge12 = os.path.dirname(os.path.realpath(__file__)) + "/set2/challenge12.txt"
+        text_to_discover = read_b64_file(path_to_challenge12)
+
+        def black_box_to_crack_harder(plain_text):
+            rdm_buffer_size_prepended = random.randint(5,50)
+
+            extended_plain_text = bytearray()
+            extended_plain_text.extend(os.urandom(rdm_buffer_size_prepended))
+            extended_plain_text.extend(plain_text)
+            extended_plain_text.extend(text_to_discover)
+            unknown_secret_key = bytearray(b'this_is_a_secret')
+
+            return aes_encrypt_ecb(extended_plain_text, unknown_secret_key)
+    
+        attack_pattern_1 = bytearray(b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01")
+        attack_pattern_2 = bytearray(b"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
+
+        attack_entry = bytearray()
+        attack_entry.extend(attack_pattern_1)
+        attack_entry.extend(attack_pattern_2)
+        attack_entry.extend(attack_pattern_1)
+
+        def discover_specific_pattern_ciphered(pattern_begin_atk):
+            nb_consecutive_pattern = 10
+            discovery_input = bytearray()
+            for i in range(0, nb_consecutive_pattern + 2):
+                discovery_input.extend(pattern_begin_atk)
+            discovery_input_ciphered = black_box_to_crack_harder(discovery_input)
+            previous_block = bytearray(1)
+            counter = 0
+            for i in range(0, len(discovery_input_ciphered), aes_block_size):
+                current_block = discovery_input_ciphered[i:i+aes_block_size]
+                if previous_block == current_block:
+                    counter = counter + 1
+                    if counter == nb_consecutive_pattern:
+                        return current_block
+                else:
+                    counter = 0
+                previous_block = current_block
+            return None
+
+        attack_pattern_1_ciphered = discover_specific_pattern_ciphered(attack_pattern_1)
+        attack_pattern_2_ciphered = discover_specific_pattern_ciphered(attack_pattern_2)
+
+        attack_output = bytearray()
+        attack_output.extend(attack_pattern_1_ciphered)
+        attack_output.extend(attack_pattern_2_ciphered)
+        attack_output.extend(attack_pattern_1_ciphered)
+
+        def find_end_random_pattern(input_pattern, outputpattern):
+            it = 0
+            index_found = -1
+            oracle_result = bytearray()
+            while(it < 1000):
+                oracle_result = black_box_to_crack_harder(input_pattern)
+                index_found = oracle_result.find(outputpattern)
+                it = it + 1
+                if index_found != -1 :
+                    break
+            return index_found, oracle_result
+        
+        def crack_black_box_harder(plain_input, ciphered_output):
+            text_shifted = {}
+            shifter = bytearray(b'\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03')
+            secret_plain_text = shifter[:]
+            for i in range(0, 16):
+                shift = shifter[0:i]
+                index_found = -1
+                while (index_found == -1):
+                    input_entry = plain_input[:]
+                    input_entry.extend(shift)
+                    oracle_output = black_box_to_crack_harder(input_entry)
+                    index_found = oracle_output.find(ciphered_output)
+                    text_shifted[i] = oracle_output[index_found+len(plain_input):]
+            len_text = len(text_shifted[0])
+            for i in range(0, len_text):
+                shift_len = 15 - (i % 16)
+                cipher_block_number = i // aes_block_size
+                start_output = cipher_block_number * aes_block_size
+                end_output = start_output + aes_block_size
+                ciphered_block_to_guess = text_shifted[shift_len][start_output:end_output]
+                len_spt = len(secret_plain_text)
+                # 15 bytes of data we are sure
+                data_to_test = secret_plain_text[len_spt-15:]
+                # let s find the last byte
+                byte_found = False
+                for plain_byte in range(0,256):
+                    complete_chunk_to_test = bytearray()
+                    complete_chunk_to_test.extend(plain_input)
+                    complete_chunk_to_test.extend(data_to_test[:])
+                    complete_chunk_to_test.append(plain_byte)
+                    it, oracle_res = find_end_random_pattern(complete_chunk_to_test, ciphered_output)
+                    it = it + len(plain_input)
+                    candidate_ciphered_block = oracle_res[it:it+16]
+                    if candidate_ciphered_block == ciphered_block_to_guess:
+                        secret_plain_text.append(plain_byte)
+                        byte_found = True
+                        break
+                if not byte_found:
+                    # padding reach
+                    break
+                
+            return clean_padding(secret_plain_text[15:])
+
+        plain_text_found = crack_black_box_harder(attack_entry, attack_output)
+
+        self.assertEqual(plain_text_found, text_to_discover)
+        ########################################################
 if __name__ == "__main__":
     sys.exit(unittest.main())
