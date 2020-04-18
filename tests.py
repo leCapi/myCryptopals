@@ -440,5 +440,25 @@ class MyTests(unittest.TestCase):
 
         self.assertEqual(plain_text_found, text_to_discover)
         ########################################################
+
+    # set 2 Challenge 15
+    def test_clean_padding(self):
+        b1 = bytearray(b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff')
+
+        good_padding = b1[:]
+        good_padding.extend(b'A\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f')
+        good_padding_clean_expected = bytearray(b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffA')
+        good_padding_clean_computed = clean_padding(good_padding)
+        self.assertEqual(good_padding_clean_expected, good_padding_clean_computed)
+
+        bad_padding = b1[:]
+        bad_padding.extend((b'A\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x02'))
+        exception_raised = False
+        try :
+            clean_padding(bad_padding)
+        except Exception:
+            exception_raised = True
+        self.assertTrue(exception_raised)
+    ########################################################
 if __name__ == "__main__":
     sys.exit(unittest.main())

@@ -255,15 +255,19 @@ def padding_block(block_to_fill, block_len):
 def clean_padding(data_to_clean, block_len=aes_block_size):
     """
     Clean PKCS#7 padding
+    The plain text must not used byte form 0x01 to 0xF
     Returns:
       bytearray: clean input bytearray
     """
     len_data = len(data_to_clean)
     padding_size = data_to_clean[len_data - 1]
+    if padding_size > 15:
+        # no padding
+        return data_to_clean
 
     for i in range(1, padding_size + 1):
         if data_to_clean[len_data - i] != padding_size:
-            return data_to_clean
+            raise Exception("Bad padding for block ", data_to_clean[len_data-aes_block_size:len_data])
 
     return data_to_clean[:len_data-padding_size]
 
