@@ -131,7 +131,7 @@ class MyTests(unittest.TestCase):
                 lineWithoutReturn = line.rstrip()
                 texts.append(hex_str_to_bytearray(lineWithoutReturn))
 
-        # print("There are " + str(len(texts)) + " texts.")
+        # the ecb ciphered text should be the one with least 16 bytes different patterns
         min_patterns = 16
         min_patterns_rank = 0
         for i,text in enumerate(texts):
@@ -139,11 +139,6 @@ class MyTests(unittest.TestCase):
             if len(patterns) < min_patterns:
                 min_patterns = len(patterns)
                 min_patterns_rank = i
-        # print("The text with the minium of 16 bytes patterns among all"
-        #     " is the text number "
-        #     + str(min_patterns_rank) + " with " + str(min_patterns) + " patterns.")
-        # print(hex(text[min_patterns_rank]))
-        # print(pattern_inventory(texts[132], 16))
         self.assertEqual(7, min_patterns)
         self.assertEqual(132, min_patterns_rank)
 
@@ -188,7 +183,7 @@ class MyTests(unittest.TestCase):
         self.assertFalse(k1 == k2, "this is very unlikely to happen")
         self.assertFalse(k1 == k3, "this is very unlikely to happen")
         self.assertFalse(k2 == k3, "this is very unlikely to happen")
-    
+
     def test_ecb_oracle(self):
         plain_text = bytearray(b'ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ')
         for i in range(0,100):
@@ -223,7 +218,7 @@ class MyTests(unittest.TestCase):
         block_size, unknown_text_size = discover_block_size()
         self.assertEqual(block_size, 16)
         self.assertEqual(unknown_text_size, 138)
-        
+
         def find_text_to_discover(text_size, tester):
             secret_plain_text = bytearray()
             shifter = bytearray(b'aaaaaaaaaaaaaaa')
@@ -314,7 +309,6 @@ class MyTests(unittest.TestCase):
         self.assertEqual(cookie.decode("ascii"), test_cookie)
         data_ciphered = cipher_profile_for(test_profile_for)
         data = load_cipher_data(data_ciphered)
-        print(data)
         self.assertEqual(data["email"], "foo@bar.com")
         self.assertEqual(data["uid"], "10")
         self.assertEqual(data["role"], "user")
@@ -351,7 +345,7 @@ class MyTests(unittest.TestCase):
             unknown_secret_key = bytearray(b'this_is_a_secret')
 
             return aes_encrypt_ecb(extended_plain_text, unknown_secret_key)
-    
+
         attack_pattern_1 = bytearray(b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01")
         attack_pattern_2 = bytearray(b"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF")
 
@@ -398,7 +392,7 @@ class MyTests(unittest.TestCase):
                 if index_found != -1 :
                     break
             return index_found, oracle_result
-        
+
         def crack_black_box_harder(plain_input, ciphered_output):
             text_shifted = {}
             shifter = bytearray(b'\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03')
@@ -439,7 +433,7 @@ class MyTests(unittest.TestCase):
                 if not byte_found:
                     # padding reach
                     break
-                
+
             return clean_padding(secret_plain_text[15:])
 
         plain_text_found = crack_black_box_harder(attack_entry, attack_output)
