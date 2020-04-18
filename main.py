@@ -9,6 +9,9 @@ from Crypto.Cipher import AES
 
 aes_block_size = 16
 
+class CryptoException(Exception):
+    pass
+
 # this function seems useless since bytearray.fromhex() exists
 def hex_str_to_bytearray(s):
     ba = bytearray()
@@ -230,7 +233,7 @@ def pattern_inventory(ba, block_len):
     return result
 
 
-def padding_block(block_to_fill, block_len):
+def padding_block(block_to_fill, block_len=aes_block_size):
     """
     Return a padded block of data with PKCS#7
     Args:
@@ -267,7 +270,7 @@ def clean_padding(data_to_clean, block_len=aes_block_size):
 
     for i in range(1, padding_size + 1):
         if data_to_clean[len_data - i] != padding_size:
-            raise Exception("Bad padding for block ", data_to_clean[len_data-aes_block_size:len_data])
+            raise CryptoException("Bad padding for block ", data_to_clean[len_data-aes_block_size:len_data])
 
     return data_to_clean[:len_data-padding_size]
 
@@ -309,7 +312,7 @@ def split_bytearray_to_blocks(ba, block_size):
         end_index += block_size
 
     if start_index < len_ba:
-        last_chunk = padding_block(ba[start_index:len_ba] ,aes_block_size)
+        last_chunk = padding_block(ba[start_index:len_ba], aes_block_size)
         tab.append(last_chunk)
 
     return tab
@@ -390,7 +393,7 @@ def rdm_encrypt_aes_cbc_or_ecb(plain_text):
     elif aes_ecb_or_aes_cbc == 1:
         return encrypt_cbc_aes_rdm_key_rdm_IV(plain_text), 1
     else:
-        raise Exception("This should not happen")
+        raise CryptoException("This should not happen")
 
 def oracle_aes_ecb_or_aes_cbc(cipher_text):
     """

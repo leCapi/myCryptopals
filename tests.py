@@ -460,5 +460,62 @@ class MyTests(unittest.TestCase):
             exception_raised = True
         self.assertTrue(exception_raised)
     ########################################################
+
+    # set 2 Challenge 16
+    def test_byte_flip_on_cbc(self):
+        unknown_secret_key = bytearray(b'this_is_a_secret')
+        initialization_vector = bytearray(b"\x11\x00\x92\xF0"\
+            b"\xBC\x32\x11\x90\x00\x78\x98\xAB\x52\x1A\x00\xE4")
+
+        def generate_cbc_ciphered_data(user_data):
+            data_prepended = bytearray(b"comment1=cooking%20MCs;userdata=")
+            data_appended = bytearray(b";comment2=%20like%20a%20pound%20of%20bacon")
+            filtered_user_data = user_data.replace(b"=", b"")
+            filtered_user_data = filtered_user_data.replace(b";", b"")
+            data_to_cipher = data_prepended[:]
+            data_to_cipher.extend(filtered_user_data)
+            data_to_cipher.extend(data_appended)
+            return aes_encrypt_cbc(unknown_secret_key, data_to_cipher, initialization_vector)
+
+        def parse_cipher_data(cipher_user_data):
+            user_data = aes_decrypt_cbc(unknown_secret_key, cipher_user_data, initialization_vector)
+            user_data = clean_padding(user_data)
+            return user_data
+
+        my_user_data = bytearray("fuck=you", "ascii")
+        cipher_ud = generate_cbc_ciphered_data(my_user_data)
+        user_data_kv = parse_cipher_data(cipher_ud)
+        self.assertTrue(user_data_kv.find(b"fuckyou"))
+
+        # the idea is to use two block for user data : 
+        # on is garbage and is used to manipulate the next cipher user data block
+        # once deciphered. We just need to switch the character which must be ';' and '='
+        malicious_user_data1 = bytearray(b"AAAAAAAAAAAAAAAA")
+        malicious_user_data2 = bytearray(b"\xCCadmin\xFFtrue\xCCk\xFFvv")
+
+        malicious_user_data = malicious_user_data1[:]
+        malicious_user_data.extend(malicious_user_data2)
+
+        switch_semicolon = 0xCC ^ ord(";")
+        switch_equal = 0xFF ^ ord("=")
+
+        attack_ciphered = generate_cbc_ciphered_data(malicious_user_data)
+        cipher_block_to_modify = attack_ciphered[2*aes_block_size:3*aes_block_size]
+        admin_block = attack_ciphered[3*aes_block_size:4*aes_block_size]
+
+        modified_ciphered_block = cipher_block_to_modify[:]
+        modified_ciphered_block[0] = modified_ciphered_block[0] ^ switch_semicolon
+        modified_ciphered_block[6] = modified_ciphered_block[6] ^ switch_equal
+        modified_ciphered_block[11] = modified_ciphered_block[11] ^ switch_semicolon
+        modified_ciphered_block[13] = modified_ciphered_block[13] ^ switch_equal
+
+        ciphered_crafted_admin_data = attack_ciphered[0:2*aes_block_size]
+        ciphered_crafted_admin_data.extend(modified_ciphered_block)
+        ciphered_crafted_admin_data.extend(admin_block)
+        ciphered_crafted_admin_data.extend(attack_ciphered[4*aes_block_size:])
+
+        user_data_kv = parse_cipher_data(ciphered_crafted_admin_data)
+        self.assertTrue(user_data_kv.find(b";admin=true;") != -1)
+    ########################################################
 if __name__ == "__main__":
     sys.exit(unittest.main())
